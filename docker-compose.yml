@@ -1,0 +1,54 @@
+version: '3.8'
+
+services:
+  principal:
+    image: postgres:15
+    container_name: principal
+    environment:
+      POSTGRES_USER: shen
+      POSTGRES_PASSWORD: sdfsdf
+      POSTGRES_DB: prueba
+      POSTGRES_REPLICATION_USER: shen
+      POSTGRES_REPLICATION_PASSWORD: 1234
+    volumes:
+      - data-principal:/var/lib/postgresql/data
+      - ./principal-init.sh:/docker-entrypoint-initdb.d/init.sh
+    ports:
+      - "5432:5432"
+    networks:
+      - red-postgres
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U shen"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  secundario:
+    image: postgres:15
+    container_name: secundario
+    environment:
+      POSTGRES_USER: shen
+      POSTGRES_PASSWORD: sdfsdf
+      POSTGRES_DB: prueba
+      POSTGRES_REPLICATION_USER: shen
+      POSTGRES_REPLICATION_PASSWORD: 1234
+    volumes:
+      - data-secundario:/var/lib/postgresql/data
+      - ./secundario-init.sh:/docker-entrypoint-initdb.d/init.sh
+    ports:
+      - "5433:5432"
+    networks:
+      - red-postgres
+    depends_on:
+      principal:
+        condition: service_healthy
+    restart: unless-stopped
+
+volumes:
+  data-principal:
+  data-secundario:
+
+networks:
+  red-postgres:
+    driver: bridge
